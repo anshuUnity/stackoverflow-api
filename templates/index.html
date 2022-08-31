@@ -1,0 +1,202 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stackoverflow Questions</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+        integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+        integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+        integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
+        crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css"
+        integrity="sha512-5A8nwdMOWrSz20fDsjczgUidUBR8liPYU+WymTZP1lmY9G6Oc7HlZv156XqnsgNUzTyMefFTcsFH/tnJE/+xBg=="
+        crossorigin="anonymous" />
+
+</head>
+
+<style>
+    .not-visible {
+        visibility: hidden;
+    }
+</style>
+
+<body>
+    <h1 class="text-center">Search Questions</h1>
+
+    <!-- Modal Search Form -->
+    <!-- Button trigger modal -->
+    <button type="button" class="btn btn-primary ml-3" data-toggle="modal" data-target="#exampleModal">
+        Search For Stackoverflow Question
+    </button>
+
+    <div class="container">
+        <h3>Searched Terms</h3>
+        <p id="body"><b>{{body}}</b></p>
+        <p id="title"><b>{{title}}</b></p>
+        <p id="q"><b>{{q}}</b></p>
+        <p id="page"><b>{{page}}</b></p>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Search Form</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method="post" action="{% url 'index'  %}">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="exampleInputEmail1">Body Search</label>
+                            <input type="text" class="form-control" name="body" id="exampleInputEmail1"
+                                aria-describedby="emailHelp" placeholder="Enter Body text to search">
+                        </div>
+                        <div class="form-group">
+                            <label for="exampleInputPassword1">Title Search</label>
+                            <input type="text" class="form-control" name="title" id="exampleInputPassword1"
+                                placeholder="Enter title text to search">
+                        </div>
+                        <div class="form-group">
+                            <label for="exampleInputPassword2">Query Search</label>
+                            <input type="text" class="form-control" name="q" id="exampleInputPassword2"
+                                placeholder="Enter query text to search">
+                        </div>
+                        <button type="submit" name="firstRequest" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- <h2>{{data}}</h2> -->
+    <div class="container mt-3" id="content">
+        <p>This information {{ is_cached|yesno:"was,wasn't" }} cached.</p>
+        {% for item in data.items %}
+        <div class="accordion" id="accordionExample{{forloop.counter}}">
+            <div class="card">
+                <div class="card-header" id="headingOne">
+                    <h2 class="mb-0">
+                        <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse"
+                            data-target="#collapse{{forloop.counter}}" aria-expanded="true"
+                            aria-controls="collapse{{forloop.counter}}">
+                            Question {{forloop.counter}})- {{item.title|safe}}
+                        </button>
+                    </h2>
+                </div>
+
+                <div id="collapse{{forloop.counter}}" class="collapse" aria-labelledby="headingOne"
+                    data-parent="#accordionExample{{forloop.counter}}">
+                    <div class="card-body">
+                        <a href="{{item.link}}" target="_blank">Link to Question</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if data.has_more %}
+    <div class="container">
+        <div class="spinner-border text-primary mt-2 not-visible" role="status" id="spinner">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <div class="load-more__btn mt-3" id="btn">
+            <button type="button" class="btn btn-success">Load More Post</button>
+        </div>
+        <div class="alert alert-danger mt-2 not-visible" role="alert" id='alert'>
+            No more post to load!!
+        </div>
+    </div>
+    {% endif %}
+    {{data.has_more|json_script:"has-more"}}
+    <script>
+        const loadBtn = document.getElementById('btn');
+        const spinner = document.getElementById('spinner');
+        const has_more = JSON.parse(document.getElementById('has-more').textContent);
+        const alert = document.getElementById('alert');
+        let body = document.getElementById("body").textContent;
+        let title = document.getElementById("title").textContent;
+        let q = document.getElementById("q").textContent;
+        let page_number = document.getElementById("page")
+
+        function loadmorePost() {
+            let page = document.getElementById("page").textContent;
+            console.log(page);
+            const content_container = document.getElementById("content");
+            $.ajax({
+                url: '{% url "load" %}',
+                type: 'GET',
+                data: {
+                    'body': body,
+                    'title': title,
+                    'q': q,
+                    'page': page
+                },
+                beforeSend: function () {
+                    // loadBtn.classList.add('not-visible');
+                    spinner.classList.remove('not-visible');
+                },
+                success: function (response) {
+                    content_container.innerHTML = ""
+                    console.log(response);
+                    spinner.classList.add('not-visible')
+                    page_number.innerHTML = response.page;
+                    console.log(response.is_cached);
+                    console.log(response.has_more);
+                    const data = response.data.items
+                    data.map(post => {
+                        content_container.innerHTML += `<div class="accordion" id="accordionExample${post.question_id}">
+                                                            <div class="card">
+                                                                <div class="card-header" id="headingOne">
+                                                                    <h2 class="mb-0">
+                                                                        <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse"
+                                                                            data-target="#collapse${post.question_id}" aria-expanded="true"
+                                                                            aria-controls="collapse${post.question_id}">
+                                                                            Question - ${post.title}
+                                                                        </button>
+                                                                    </h2>
+                                                                </div>
+
+                                                                <div id="collapse${post.question_id}" class="collapse" aria-labelledby="headingOne"
+                                                                    data-parent="#accordionExample${post.question_id}">
+                                                                    <div class="card-body">
+                                                                        <a href="${post.link}" target="_blank">Link to Question</a>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>`
+
+                        if (response.has_more == false) {
+                            alert.classList.remove('not-visible');
+                            loadBtn.classList.add('not-visible');
+                        }
+                    })
+                    console.log(data);
+                },
+                error: function (error) {
+                    console.log(error);
+                }
+            })
+        }
+
+        loadBtn.addEventListener('click', () => {
+            loadmorePost()
+        });
+    </script>
+
+</body>
+
+</html>
